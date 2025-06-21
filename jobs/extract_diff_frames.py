@@ -1,63 +1,79 @@
+#!/usr/bin/env python3
 import argparse
 import os
-import cv2
-import numpy as np
+import re
+import shutil
+import subprocess
+import sys
 
-def extract_diff_frames(video_path, output_dir, threshold):
+def extract_diff_frames_ffmpeg(video_path, output_dir, threshold, ffmpeg_path):
     """
-    Captures frames from a video only if they differ enough
-    from the last captured frame. Filenames now include the time in seconds.
+    Uses `ffmpeg -vf select=gt(scene,threshold)` to extract frames
+    that differ by at least `threshold` (0.0–1.0). Filenames include the timestamp.
     """
-    cap = cv2.VideoCapture(video_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_index = 0
-    saved_count = 0
-    last_gray = None
+    # Clamp & format threshold
+    scene_thresh = max(0.0, min(threshold, 1.0))
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break  # No more frames
+    # Build the ffmpeg command
+    cmd = [
+        ffmpeg_path,
+        "-i", video_path,
+        "-vf", f"select=gt(scene\\,{scene_thresh:.3f}),showinfo",
+        "-vsync", "vfr",
+        os.path.join(output_dir, "frame_%06d.jpg")
+    ]
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        current_time_sec = frame_index / fps if fps else 0.0
+    # Run ffmpeg; capture stderr for showinfo logs
+    proc = subprocess.run(
+        cmd,
+        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        text=True
+    )
 
-        # If first capture or difference >= threshold, we save the frame
-        if last_gray is None:
-            last_gray = gray.copy()
-            out_name = f"frame_{current_time_sec:.2f}.jpg"
-            out_path = os.path.join(output_dir, out_name)
-            cv2.imwrite(out_path, gray)
-            saved_count += 1
-        else:
-            diff = cv2.absdiff(gray, last_gray)
-            score = np.mean(diff)
+    log_lines = proc.stderr.splitlines()
+    ts_pattern = re.compile(r"pts_time:(\d+\.\d+)")
+    timestamps = [float(m.group(1)) for line in log_lines if (m := ts_pattern.search(line))]
 
-            if score >= threshold:
-                last_gray = gray.copy()
-                out_name = f"frame_{current_time_sec:.2f}.jpg"
-                out_path = os.path.join(output_dir, out_name)
-                cv2.imwrite(out_path, gray)
-                saved_count += 1
+    # Rename output files to include timestamp
+    for idx, ts in enumerate(timestamps, start=1):
+        old = os.path.join(output_dir, f"frame_{idx:06d}.jpg")
+        new = os.path.join(output_dir, f"frame_{ts:.2f}.jpg")
+        if os.path.exists(old):
+            os.rename(old, new)
 
-        frame_index += 1
+    print(f"Processed frames (threshold={scene_thresh:.3f}); saved {len(timestamps)} frames to {output_dir}")
 
-    cap.release()
-    total_frames = frame_index
-    print(f"Processed {int(total_frames)} frames; saved {saved_count} frames.")
-    print(f"Frames are in: {output_dir}")
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
-        description="Extract frames from a video with difference-based capture, storing time in filename."
+        description="Extract scene‑change frames via FFmpeg, naming them by timestamp."
     )
     parser.add_argument("video_path", help="Path to the video file")
     parser.add_argument("output_dir", help="Directory to save extracted frames")
     parser.add_argument(
-        "--threshold", type=float, default=30.0, help="Difference threshold"
+        "--threshold", type=float, default=0.10,
+        help="Scene‑change threshold (0.0–1.0; default 0.10)"
+    )
+    parser.add_argument(
+        "--ffmpeg-path",
+        default=os.path.join(os.getcwd(), "bin", "ffmpeg"),
+        help="Path to ffmpeg binary (default: ./bin/ffmpeg)"
     )
     args = parser.parse_args()
 
-    extract_diff_frames(args.video_path, args.output_dir, args.threshold)
+    # Verify binary exists
+    if not shutil.which(args.ffmpeg_path):
+        print(f"Error: ffmpeg not found at {args.ffmpeg_path}", file=sys.stderr)
+        sys.exit(1)
+
+    extract_diff_frames_ffmpeg(
+        args.video_path,
+        args.output_dir,
+        args.threshold,
+        args.ffmpeg_path
+    )
+
+if __name__ == "__main__":
+    main()

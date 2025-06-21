@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import os
 import uuid
 import asyncio
-import numpy as np
 import json
 import shutil
 import bcrypt
@@ -21,8 +20,6 @@ load_dotenv()
 # --- Configuration ---
 app = Sanic("PN1")
 THRESHOLD = 30
-AUDIO_MODEL_PATH = "models/audio_classifier.h5"
-MICRO_MODEL_PATH = "models/micro_interaction.keras"
 UPLOADS_DIR = "uploads"
 JWT_SECRET = os.getenv("JWT_SECRET", "your_jwt_secret_key")
 
@@ -35,16 +32,6 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 
 # Path to the local ffmpeg binary
 FFMPEG_PATH = os.path.join(os.getcwd(), "bin", "ffmpeg")
-
-# Placeholder for TensorFlow models
-class PlaceholderModel:
-    def predict(self, *args, **kwargs):
-        # Return a dummy prediction
-        return [np.zeros(11)]  # Adjust the shape as needed
-
-# Use placeholder models instead of loading actual models
-audio_model = PlaceholderModel()
-micro_model = PlaceholderModel()
 
 EMOTIONS = [
     "Surprised", "Excited", "Happy", "Content", "Relaxed",
@@ -162,11 +149,6 @@ async def serve_landing_page(request):
 async def serve_pwa(request):
     return await response.file("./frontend/pwa.html")
 
-# --- Audio Processing ---
-def preprocess_audio(audio_path: str) -> np.ndarray:
-    # Placeholder for audio processing
-    return np.zeros((1, 40))  # Dummy data
-
 def analyze_audio(audio_path: str) -> dict:
     # Placeholder for audio analysis
     return {EMOTIONS[i]: float(0) for i in range(len(EMOTIONS))}
@@ -211,34 +193,40 @@ async def analyze(request):
 
     # Extract frames
     retcode, _, stderr = await run_async_cmd(
-        "python", "jobs/extract_diff_frames.py", video_path, frames_dir,
-        "--threshold", str(THRESHOLD)
+        "python", "jobs/extract_diff_frames.py",
+        video_path,
+        frames_dir,
+        "--threshold", str(THRESHOLD / 255.0), # if mapping 0–255 → 0.0–1.0
+        "--ffmpeg-path", FFMPEG_PATH # uses your local bin/ffmpeg
     )
+
     if retcode != 0:
         logger.error(f"Frame extraction error: {stderr}")
         return response.json({"error": "Frame extraction failed."}, status=500)
 
     # Analyze frames
-    micro_path = os.path.join(upload_dir, "micro_analysis.json")
-    retcode, _, stderr = await run_async_cmd(
-        "python", "jobs/analyze_them_frames.py", frames_dir, MICRO_MODEL_PATH, micro_path
-    )
-    if retcode != 0:
-        logger.error(f"Frame analysis error: {stderr}")
-        return response.json({"error": "Frame analysis failed."}, status=500)
+    # micro_path = os.path.join(upload_dir, "micro_analysis.json")
+    # retcode, _, stderr = await run_async_cmd(
+    #     "python", "jobs/analyze_them_frames.py", frames_dir, micro_path
+    # )
+
+    # if retcode != 0:
+    #     logger.error(f"Frame analysis error: {stderr}")
+    #     return response.json({"error": "Frame analysis failed."}, status=500)
 
     # Extract audio using local ffmpeg binary
     audio_path = os.path.join(upload_dir, "audio.wav")
     retcode, _, stderr = await run_async_cmd(
         FFMPEG_PATH, "-y", "-i", video_path, "-vn", "-acodec", "pcm_s16le", audio_path
     )
+
     if retcode != 0:
         logger.error(f"Audio extraction error: {stderr}")
         return response.json({"error": "Audio extraction failed."}, status=500)
 
     # Analyze + Combine
-    audio_emotions = analyze_audio(audio_path)
-    combo_path = save_combo_analysis(upload_dir, audio_emotions, micro_path)
+    # audio_emotions = analyze_audio(audio_path)
+    # combo_path = save_combo_analysis(upload_dir, audio_emotions, micro_path)
 
     return response.json({
         "status": "success",

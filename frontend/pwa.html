@@ -62,11 +62,6 @@
       class="absolute top-2 left-[4.5rem] p-2 w-auto h-16 opacity-40 pointer-events-none"
     />
 
-    <!-- <div id="loader" class="absolute top-20 flex flex-col items-center justify-center rounded">
-    <img src="icons/ios/512.png" alt="Loading..." class="w-48 h-48 animate-pulse" />
-    <h4 class="text-white">Welcome to PN1</h4>
-  </div> -->
-
     <div
       id="buttons-container"
       class="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-4 items-center opacity-0 pointer-events-none transition-opacity duration-500 z-20"
@@ -402,23 +397,22 @@
             typeof window.orientation !== 'undefined' ||
             navigator.userAgent.indexOf('IEMobile') !== -1 ||
             window.innerWidth <= 768
-          ); // Adjust width as needed
+          );
         }
 
         // Function to show non-mobile message
         function showNonMobileMessage() {
           const body = document.body;
           body.innerHTML = `
-          <div class="flex flex-col items-center justify-center h-screen w-full text-white bg-[#93C575]">
-            <h1 class="text-xl font-bold mb-4">This app is designed for mobile devices.</h1>
-            <div class="p-2.5 bg-white rounded-lg">
-              <img id="desktopQRCode" alt="QR Code" class="w-96 h-96 mx-auto mb-4" />
-              <p class="mb-3 text-xs text-[#93C575]">Please scan the QR code with your mobile device to access the app.</p>
+            <div class="flex flex-col items-center justify-center h-screen w-full text-white bg-[#93C575]">
+              <h1 class="text-xl font-bold mb-4">This app is designed for mobile devices.</h1>
+              <div class="p-2.5 bg-white rounded-lg">
+                <img id="desktopQRCode" alt="QR Code" class="w-96 h-96 mx-auto mb-4" />
+                <p class="mb-3 text-xs text-[#93C575]">Please scan the QR code with your mobile device to access the app.</p>
+              </div>
             </div>
-          </div>
-        `;
+          `;
 
-          // Set QR code source
           const desktopQRCode = document.getElementById('desktopQRCode');
           if (desktopQRCode) {
             desktopQRCode.src =
@@ -498,6 +492,8 @@
                 localStorage.setItem('token', data.token);
                 alert('Login successful!');
                 signinModal.classList.add('hidden');
+                // Show or hide UI elements based on authentication status
+                updateUIForAuthStatus(true);
               } else {
                 alert(data.error || 'Login failed');
               }
@@ -538,6 +534,28 @@
               alert('An error occurred during registration');
             }
           });
+        }
+
+        // Function to update UI based on authentication status
+        function updateUIForAuthStatus(isAuthenticated) {
+          const signinBtn = document.getElementById('signinBtn');
+          const savedBtn = document.getElementById('savedBtn');
+
+          if (isAuthenticated) {
+            signinBtn.style.display = 'none';
+            savedBtn.style.display = 'flex';
+          } else {
+            signinBtn.style.display = 'flex';
+            savedBtn.style.display = 'none';
+          }
+        }
+
+        // Check authentication status on page load
+        const token = localStorage.getItem('token');
+        if (token) {
+          updateUIForAuthStatus(true);
+        } else {
+          updateUIForAuthStatus(false);
         }
       });
     </script>

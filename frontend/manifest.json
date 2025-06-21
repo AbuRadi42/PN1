@@ -1,7 +1,7 @@
 {
   "name": "PN1 - AI Dog Translator",
   "short_name": "PN1",
-  "start_url": "/index.html",
+  "start_url": "/pwa.html",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#93C575",

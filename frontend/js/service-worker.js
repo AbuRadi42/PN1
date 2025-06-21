@@ -2,7 +2,7 @@ const CACHE_NAME = 'pn1-v1.0';
 
 const urlsToCache = [
   '/',
-  '/index.html',
+  '/pwa.html',
   '/manifest.json',
   '/css/styles.css',
   '/js/main.js',

@@ -28,7 +28,7 @@ DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_PORT = os.getenv("DB_PORT", "5432")
+DB_PORT = os.getenv("DB_PORT", "6543")
 
 # Path to the local ffmpeg binary
 FFMPEG_PATH = os.path.join(os.getcwd(), "bin", "ffmpeg")
@@ -92,6 +92,17 @@ def auth_required(handler):
 app.static("/", "./frontend/", name="frontend_static")
 app.static("/uploads", "./uploads", name="uploads_static")
 
+# --- DB Test ---
+@app.get("/test-db")
+async def test_db(request):
+    try:
+        conn = await get_db_connection()
+        result = await conn.fetch("SELECT NOW()")
+        await conn.close()
+        return sanic_json({"status": "success", "time": str(result[0]["now"])})
+    except Exception as e:
+        return sanic_json({"status": "error", "message": str(e)})
+
 # --- Authentication Endpoints ---
 @app.post("/auth/register")
 async def register(request):
@@ -140,6 +151,27 @@ async def login(request):
 async def check_auth(request):
     return sanic_json({"user": request.ctx.user})
 
+# --- Subscription Endpoints ---
+@app.post("/subscribe")
+@auth_required
+async def subscribe(request):
+    user_id = request.ctx.user["user_id"]
+    try:
+        conn = await get_db_connection()
+        await conn.execute(
+            """
+            INSERT INTO subscriptions (user_id, is_active, start_date, end_date, payment_status)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (user_id)
+            DO UPDATE SET is_active = $2, start_date = $3, end_date = $4, payment_status = $5
+            """,
+            user_id, True, datetime.utcnow(), datetime.utcnow() + timedelta(days=30), "completed"
+        )
+        await conn.close()
+        return sanic_json({"message": "Subscription activated successfully"})
+    except Exception as e:
+        return sanic_json({"error": str(e)}, status=500)
+
 # --- Main Endpoints ---
 @app.get("/")
 async def serve_landing_page(request):
@@ -178,7 +210,6 @@ def save_combo_analysis(upload_dir: str, audio_emotions: dict, micro_path: str) 
 
 # --- Main Upload/Analyze Route ---
 @app.post("/analyze")
-# @auth_required
 async def analyze(request):
     video_file: File = request.files.get("video")
     if not video_file:
@@ -196,23 +227,13 @@ async def analyze(request):
         "python", "jobs/extract_diff_frames.py",
         video_path,
         frames_dir,
-        "--threshold", str(THRESHOLD / 255.0), # if mapping 0–255 → 0.0–1.0
-        "--ffmpeg-path", FFMPEG_PATH # uses your local bin/ffmpeg
+        "--threshold", str(THRESHOLD / 255.0),
+        "--ffmpeg-path", FFMPEG_PATH
     )
 
     if retcode != 0:
         logger.error(f"Frame extraction error: {stderr}")
         return response.json({"error": "Frame extraction failed."}, status=500)
-
-    # Analyze frames
-    # micro_path = os.path.join(upload_dir, "micro_analysis.json")
-    # retcode, _, stderr = await run_async_cmd(
-    #     "python", "jobs/analyze_them_frames.py", frames_dir, micro_path
-    # )
-
-    # if retcode != 0:
-    #     logger.error(f"Frame analysis error: {stderr}")
-    #     return response.json({"error": "Frame analysis failed."}, status=500)
 
     # Extract audio using local ffmpeg binary
     audio_path = os.path.join(upload_dir, "audio.wav")
@@ -224,9 +245,19 @@ async def analyze(request):
         logger.error(f"Audio extraction error: {stderr}")
         return response.json({"error": "Audio extraction failed."}, status=500)
 
-    # Analyze + Combine
-    # audio_emotions = analyze_audio(audio_path)
-    # combo_path = save_combo_analysis(upload_dir, audio_emotions, micro_path)
+    # If the user is authenticated, save the video metadata to the database
+    user_id = request.ctx.user.get("user_id") if hasattr(request.ctx, 'user') else None
+    if user_id:
+        try:
+            conn = await get_db_connection()
+            await conn.execute(
+                "INSERT INTO videos (video_id, user_id, video_path) VALUES ($1, $2, $3)",
+                upload_id, user_id, f"/uploads/{upload_id}/video.mp4"
+            )
+            await conn.close()
+        except Exception as e:
+            logger.error(f"Database error: {str(e)}")
+            return response.json({"error": "Failed to save video metadata."}, status=500)
 
     return response.json({
         "status": "success",
@@ -235,7 +266,6 @@ async def analyze(request):
         "paths": {
             "video": f"/uploads/{upload_id}/video.mp4",
             "frames_dir": f"/uploads/{upload_id}/frames/",
-            "combo_analysis": f"/uploads/{upload_id}/combo_analysis.json",
             "audio": f"/uploads/{upload_id}/audio.wav",
         },
     })
@@ -246,18 +276,21 @@ async def replay_page(request):
     return await response.file("./frontend/replay.html")
 
 @app.get("/uploads_index.json")
+# @auth_required
 async def list_uploaded_sessions(request):
-    entries = []
-    for upload_id in os.listdir(UPLOADS_DIR):
-        up_path = os.path.join(UPLOADS_DIR, upload_id)
-        if os.path.isfile(os.path.join(up_path, "combo_analysis.json")):
-            entries.append({
-                "id": upload_id,
-                "timestamp": os.path.getmtime(os.path.join(up_path, "video.mp4"))
-            })
-
-    entries.sort(key=lambda x: x["timestamp"], reverse=True)
-    return sanic_json(entries)
+    user_id = request.ctx.user["user_id"]
+    try:
+        conn = await get_db_connection()
+        videos = await conn.fetch("SELECT video_id, uploaded_at FROM videos WHERE user_id = $1", user_id)
+        await conn.close()
+        entries = [{
+            "id": video["video_id"],
+            "timestamp": video["uploaded_at"].timestamp()
+        } for video in videos]
+        entries.sort(key=lambda x: x["timestamp"], reverse=True)
+        return sanic_json(entries)
+    except Exception as e:
+        return sanic_json({"error": str(e)}, status=500)
 
 @app.post("/delete_video")
 # @auth_required
@@ -270,6 +303,13 @@ async def delete_video(request):
     path = os.path.join(UPLOADS_DIR, upload_id)
     if os.path.exists(path):
         shutil.rmtree(path)
+        try:
+            conn = await get_db_connection()
+            await conn.execute("DELETE FROM videos WHERE video_id = $1", upload_id)
+            await conn.close()
+        except Exception as e:
+            logger.error(f"Database error: {str(e)}")
+            return response.json({"error": "Failed to delete video metadata."}, status=500)
         return response.json({"status": "deleted", "upload_id": upload_id})
     else:
         return response.json({"error": "Upload not found."}, status=404)

@@ -1,203 +1,222 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="icon" href="icons/ios/128.png" type="image/x-icon" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="manifest" href="manifest.json" />
+    <script src="js/tailwindcss.3415.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+      @keyframes float {
+        0% {
+          transform: translateY(2.5px);
+        }
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="icon" href="icons/ios/128.png" type="image/x-icon" />
-  <link rel="stylesheet" href="css/styles.css" />
-  <link rel="manifest" href="manifest.json" />
-  <script src="js/tailwindcss.3415.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
-  <style>
-    @keyframes float {
-      0% {
-        transform: translateY(2.5px);
+        50% {
+          transform: translateY(-2.5px);
+        }
+
+        100% {
+          transform: translateY(2.5px);
+        }
       }
 
-      50% {
-        transform: translateY(-2.5px);
+      .floating-text {
+        animation: float 2.5s ease-in-out infinite;
       }
+    </style>
+    <title>PN1 - Replay</title>
+  </head>
 
-      100% {
-        transform: translateY(2.5px);
-      }
-    }
+  <body class="bg-gray-900 text-gray-100 font-sans">
+    <div class="flex min-h-screen">
+      <!-- Sidebar -->
+      <aside
+        id="sidebar"
+        class="w-[12.5vw] bg-gray-800 border-r border-gray-700 p-4 hidden md:block"
+      >
+        <h2 class="text-lg font-semibold mb-4 text-[#93C575]">
+          Captured Videos
+        </h2>
+        <div id="sessionList" class="space-y-2 text-sm"></div>
+      </aside>
 
-    .floating-text {
-      animation: float 2.5s ease-in-out infinite;
-    }
-  </style>
-  <title>PN1 - Replay</title>
-</head>
+      <!-- Main content -->
+      <main class="flex-1 p-6">
+        <h1 class="text-3xl font-bold text-[#93C575] mb-6">
+          Replay & Analysis
+        </h1>
 
-<body class="bg-gray-900 text-gray-100 font-sans">
-  <div class="flex min-h-screen">
-    <!-- Sidebar -->
-    <aside id="sidebar" class="w-[12.5vw] bg-gray-800 border-r border-gray-700 p-4 hidden md:block">
-      <h2 class="text-lg font-semibold mb-4 text-[#93C575]">
-        Captured Videos
-      </h2>
-      <div id="sessionList" class="space-y-2 text-sm"></div>
-    </aside>
-
-    <!-- Main content -->
-    <main class="flex-1 p-6">
-      <h1 class="text-3xl font-bold text-[#93C575] mb-6">
-        Replay & Analysis
-      </h1>
-
-      <div class="bg-gray-800 rounded-xl shadow-md p-4 mb-6 flex justify-center">
-        <video id="videoPlayer" class="max-h-[50vh] w-auto h-auto rounded-xl" controls></video>
-      </div>
-
-      <div class="bg-gray-800 rounded-xl shadow-md p-4 mb-6">
-        <h4 class="text-xl font-semibold text-[#93C575]">
-          Download Raw Data:
-          <a id="downloadVideo" class="text-[#93C575] underline" download>Video</a>
-          <a id="downloadAudio" class="text-[#93C575] underline" download>Audio</a>
-          <a id="downloadCombo" class="text-[#93C575] underline" download>JSON</a>
-        </h4>
-      </div>
-
-      <div class="space-y-10">
-        <div class="bg-gray-800 rounded-xl shadow-md p-4">
-          <h2 class="text-lg font-semibold text-[#93C575] mb-2">
-            Micro-Interactions
-          </h2>
-          <div id="microChart" class="w-full h-[150px]"></div>
+        <div
+          class="bg-gray-800 rounded-xl shadow-md p-4 mb-6 flex justify-center"
+        >
+          <video
+            id="videoPlayer"
+            class="max-h-[50vh] w-auto h-auto rounded-xl"
+            controls
+          ></video>
         </div>
 
-        <div class="bg-gray-800 rounded-xl shadow-md p-4">
-          <h2 class="text-lg font-semibold text-[#93C575] mb-2">
-            Pose Estimations
-          </h2>
-          <div id="posesChart"
-            class="w-full h-[150px] pb-[20px] flex justify-center items-center text-[#FFFFFF99] floating-text">
-            Deploying Soon
+        <div class="bg-gray-800 rounded-xl shadow-md p-4 mb-6">
+          <h4 class="text-xl font-semibold text-[#93C575]">
+            Download Raw Data:
+            <a id="downloadVideo" class="text-[#93C575] underline" download
+              >Video</a
+            >
+            <a id="downloadAudio" class="text-[#93C575] underline" download
+              >Audio</a
+            >
+            <a id="downloadCombo" class="text-[#93C575] underline" download
+              >JSON</a
+            >
+          </h4>
+        </div>
+
+        <div class="space-y-10">
+          <div class="bg-gray-800 rounded-xl shadow-md p-4">
+            <h2 class="text-lg font-semibold text-[#93C575] mb-2">
+              Micro-Interactions
+            </h2>
+            <div id="microChart" class="w-full h-[150px]"></div>
+          </div>
+
+          <div class="bg-gray-800 rounded-xl shadow-md p-4">
+            <h2 class="text-lg font-semibold text-[#93C575] mb-2">
+              Pose Estimations
+            </h2>
+            <div
+              id="posesChart"
+              class="w-full h-[150px] pb-[20px] flex justify-center items-center text-[#FFFFFF99] floating-text"
+            >
+              Deploying Soon
+            </div>
+          </div>
+
+          <div class="bg-gray-800 rounded-xl shadow-md p-4">
+            <h2 class="text-lg font-semibold text-[#93C575] mb-2">
+              Audio Classification
+            </h2>
+            <div id="audioChart" class="w-full h-[150px]"></div>
           </div>
         </div>
+      </main>
+    </div>
 
-        <div class="bg-gray-800 rounded-xl shadow-md p-4">
-          <h2 class="text-lg font-semibold text-[#93C575] mb-2">
-            Audio Classification
-          </h2>
-          <div id="audioChart" class="w-full h-[150px]"></div>
-        </div>
-      </div>
-    </main>
-  </div>
+    <script>
+      let currentSessionId = null;
+      let latestSessionIds = [];
 
-  <script>
-    let currentSessionId = null;
-    let latestSessionIds = [];
+      async function fetchAndRenderSession(id) {
+        currentSessionId = id;
 
-    async function fetchAndRenderSession(id) {
-      currentSessionId = id;
+        const videoSrc = `/uploads/${id}/video.mp4`;
+        const audioSrc = `/uploads/${id}/audio.wav`;
+        const comboSrc = `/uploads/${id}/combo_analysis.json`;
+        const posesSrc = `/uploads/${id}/poses_analysis.json`;
+        const microSrc = `/uploads/${id}/micro_analysis.json`;
+        const audioAnalysisSrc = `/uploads/${id}/audio_analysis.json`;
 
-      const videoSrc = `/uploads/${id}/video.mp4`;
-      const audioSrc = `/uploads/${id}/audio.wav`;
-      const comboSrc = `/uploads/${id}/combo_analysis.json`;
-      const posesSrc = `/uploads/${id}/poses_analysis.json`;
-      const microSrc = `/uploads/${id}/micro_analysis.json`;
-      const audioAnalysisSrc = `/uploads/${id}/audio_analysis.json`;
+        document.getElementById('videoPlayer').src = videoSrc;
+        document.getElementById('downloadVideo').href = videoSrc;
+        document.getElementById('downloadAudio').href = audioSrc;
+        document.getElementById('downloadCombo').href = comboSrc;
 
-      document.getElementById('videoPlayer').src = videoSrc;
-      document.getElementById('downloadVideo').href = videoSrc;
-      document.getElementById('downloadAudio').href = audioSrc;
-      document.getElementById('downloadCombo').href = comboSrc;
+        try {
+          const [poseData, microData, audioData] = await Promise.all([
+            fetch(posesSrc)
+              .then((r) => r.json())
+              .catch(() => []),
+            fetch(microSrc)
+              .then((r) => r.json())
+              .catch(() => []),
+            fetch(audioAnalysisSrc)
+              .then((r) => r.json())
+              .catch(() => []),
+          ]);
 
-      try {
-        const [poseData, microData, audioData] = await Promise.all([
-          fetch(posesSrc)
-            .then((r) => r.json())
-            .catch(() => []),
-          fetch(microSrc)
-            .then((r) => r.json())
-            .catch(() => []),
-          fetch(audioAnalysisSrc)
-            .then((r) => r.json())
-            .catch(() => []),
-        ]);
+          document.getElementById('posesChart').innerHTML =
+            '<p class="w-full h-[120px] pb-[20px] flex justify-center items-center text-[#FFFFFF99] floating-text">Deploying Soon</p>';
 
-        document.getElementById('posesChart').innerHTML =
-          '<p class="w-full h-[120px] pb-[20px] flex justify-center items-center text-[#FFFFFF99] floating-text">Deploying Soon</p>';
-
-        renderTimelineChart('microChart', microData, '');
-        renderTimelineChart('audioChart', audioData, '');
-      } catch (err) {
-        console.error('Failed to load one or more charts:', err);
+          renderTimelineChart('microChart', microData, '');
+          renderTimelineChart('audioChart', audioData, '');
+        } catch (err) {
+          console.error('Failed to load one or more charts:', err);
+        }
       }
-    }
 
-    function renderTimelineChart(containerId, data, title) {
-      if (!data || !data.length) return;
+      function renderTimelineChart(containerId, data, title) {
+        if (!data || !data.length) return;
 
-      const chartDom = document.getElementById(containerId);
-      const chart = echarts.init(chartDom);
-      chartDom.dataset.chartRef = chart.id;
+        const chartDom = document.getElementById(containerId);
+        const chart = echarts.init(chartDom);
+        chartDom.dataset.chartRef = chart.id;
 
-      const emotionColors = {
-        Happy: '#93C575',
-        Sad: '#1E40AF',
-        Angry: '#DC2625',
-        Relaxed: '#F5F5F5',
-        Neutral: '#9CA3AF',
-      };
+        const emotionColors = {
+          Happy: '#93C575',
+          Sad: '#1E40AF',
+          Angry: '#DC2625',
+          Relaxed: '#F5F5F5',
+          Neutral: '#9CA3AF',
+        };
 
-      const markers = [];
+        const markers = [];
 
-      data.forEach((entry) => {
-        const time = entry.time;
-        let maxEmotion = null;
-        let maxValue = -1;
+        data.forEach((entry) => {
+          const time = entry.time;
+          let maxEmotion = null;
+          let maxValue = -1;
 
-        for (const [emotion, value] of Object.entries(entry)) {
-          if (emotion !== 'time' && value > maxValue) {
-            maxValue = value;
-            maxEmotion = emotion;
+          for (const [emotion, value] of Object.entries(entry)) {
+            if (emotion !== 'time' && value > maxValue) {
+              maxValue = value;
+              maxEmotion = emotion;
+            }
           }
-        }
 
-        if (maxEmotion !== null) {
-          markers.push({
-            name: maxEmotion,
-            coord: [time, 0.1],
-            symbol: 'triangle',
-            symbolRotate: 180,
-            symbolSize: [10, 10],
-            itemStyle: { color: emotionColors[maxEmotion] || '#888' },
-          });
-        }
-      });
+          if (maxEmotion !== null) {
+            markers.push({
+              name: maxEmotion,
+              coord: [time, 0.1],
+              symbol: 'triangle',
+              symbolRotate: 180,
+              symbolSize: [10, 10],
+              itemStyle: { color: emotionColors[maxEmotion] || '#888' },
+            });
+          }
+        });
 
-      const maxTime = Math.max(...data.map((d) => d.time)) || 15;
-      const roundedMax = Math.ceil(maxTime / 1) * 1;
-      const interval = roundedMax / 10;
+        const maxTime = Math.max(...data.map((d) => d.time)) || 15;
+        const roundedMax = Math.ceil(maxTime / 1) * 1;
+        const interval = roundedMax / 10;
 
-      chart.setOption({
-        title: {
-          text: title,
-          left: 'center',
-          textStyle: { color: '#93C575' },
-        },
-        tooltip: {
-          trigger: 'item',
-          position: function (point, params, dom, rect, size) {
-            const [x, y] = point;
-            const boxWidth = 96; // 6rem in px
-            const boxHeight = 100; // estimate tooltip height
-            return [x - boxWidth / 2, y - boxHeight - 57]; // center above marker
+        chart.setOption({
+          title: {
+            text: title,
+            left: 'center',
+            textStyle: { color: '#93C575' },
           },
-          formatter: function (params) {
-            const emotion = params.name;
-            const time = params.data?.coord?.[0] ?? 0;
-            const color = params.color || '#93C575';
-            const frameFilename = `frame_${time.toFixed(2)}.jpg`;
-            const frameSrc = `/uploads/${currentSessionId}/frames/${frameFilename}`;
+          tooltip: {
+            trigger: 'item',
+            position: function (point, params, dom, rect, size) {
+              const [x, y] = point;
+              const boxWidth = 96; // 6rem in px
+              const boxHeight = 100; // estimate tooltip height
+              return [x - boxWidth / 2, y - boxHeight - 57]; // center above marker
+            },
+            formatter: function (params) {
+              const emotion = params.name;
+              const time = params.data?.coord?.[0] ?? 0;
+              const color = params.color || '#93C575';
+              const frameFilename = `frame_${time.toFixed(2)}.jpg`;
+              const frameSrc = `/uploads/${currentSessionId}/frames/${frameFilename}`;
 
-            return `
+              return `
               <div style="
                 max-width: 6rem;
                 border-radius: 0.5rem;
@@ -212,169 +231,168 @@
                 </div>
               </div>
             `;
-          },
-          backgroundColor: 'transparent',
-          borderColor: 'transparent',
-          padding: '0px',
-          borderRadius: '0.5rem',
-          textStyle: {
-            fontSize: 0,
-          },
-        },
-        grid: {
-          top: 60,
-          left: 40,
-          right: 20,
-          bottom: 60,
-        },
-        xAxis: {
-          type: 'value',
-          min: 0,
-          max: roundedMax,
-          interval: interval,
-          axisLine: { lineStyle: { color: '#aaa' } },
-          axisTick: {
-            show: true,
-            length: 6,
-            lineStyle: { color: '#888' },
-          },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              color: '#444',
-              type: 'dashed',
+            },
+            backgroundColor: 'transparent',
+            borderColor: 'transparent',
+            padding: '0px',
+            borderRadius: '0.5rem',
+            textStyle: {
+              fontSize: 0,
             },
           },
-          axisLabel: {
-            color: '#ccc',
-            formatter: (val) => `${val}s`,
+          grid: {
+            top: 60,
+            left: 40,
+            right: 20,
+            bottom: 60,
           },
-        },
-        yAxis: {
-          min: -0.2,
-          max: 1,
-          show: false,
-        },
-        series: [
-          {
-            type: 'scatter',
-            symbol: 'none',
-            data: [],
-            markPoint: {
-              symbol: 'triangle',
-              symbolRotate: 180,
-              symbolSize: [12, 10],
-              data: markers,
+          xAxis: {
+            type: 'value',
+            min: 0,
+            max: roundedMax,
+            interval: interval,
+            axisLine: { lineStyle: { color: '#aaa' } },
+            axisTick: {
+              show: true,
+              length: 6,
+              lineStyle: { color: '#888' },
+            },
+            splitLine: {
+              show: true,
+              lineStyle: {
+                color: '#444',
+                type: 'dashed',
+              },
+            },
+            axisLabel: {
+              color: '#ccc',
+              formatter: (val) => `${val}s`,
             },
           },
-          {
-            type: 'custom',
-            renderItem: function (params, api) {
-              const x = api.coord([api.value(0), 0])[0];
-              const yBottom = api.coord([0, -0.2])[1];
-              const yTop = api.coord([0, 1])[1];
-
-              return {
-                type: 'line',
-                shape: {
-                  x1: x,
-                  y1: yTop,
-                  x2: x,
-                  y2: yBottom,
-                },
-                style: {
-                  stroke: '#93C575',
-                  lineWidth: 2,
-                },
-              };
-            },
-            encode: {
-              x: 0,
-            },
-            data: [[0]], // Initial value
-            silent: true,
-            z: 10,
+          yAxis: {
+            min: -0.2,
+            max: 1,
+            show: false,
           },
-        ],
-      });
-    }
+          series: [
+            {
+              type: 'scatter',
+              symbol: 'none',
+              data: [],
+              markPoint: {
+                symbol: 'triangle',
+                symbolRotate: 180,
+                symbolSize: [12, 10],
+                data: markers,
+              },
+            },
+            {
+              type: 'custom',
+              renderItem: function (params, api) {
+                const x = api.coord([api.value(0), 0])[0];
+                const yBottom = api.coord([0, -0.2])[1];
+                const yTop = api.coord([0, 1])[1];
 
-    function renderSessionList(sessions) {
-      const sessionList = document.getElementById('sessionList');
-      sessionList.innerHTML = '';
-
-      sessions.forEach(({ id, timestamp }) => {
-        const wrapper = document.createElement('div');
-        wrapper.className =
-          'flex items-center gap-2 bg-gray-700 hover:bg-gray-600 p-2 rounded cursor-pointer transition text-sm';
-
-        const icon = document.createElement('div');
-        icon.className =
-          'w-8 h-8 bg-[#93C575] rounded flex items-center justify-center text-black font-bold text-xs';
-        icon.textContent = '▶';
-
-        const label = document.createElement('div');
-        label.className = 'flex-1 text-gray-200 leading-tight';
-        label.textContent = new Date(timestamp * 1000).toLocaleString();
-
-        wrapper.appendChild(icon);
-        wrapper.appendChild(label);
-        wrapper.addEventListener('click', () => fetchAndRenderSession(id));
-
-        sessionList.appendChild(wrapper);
-      });
-    }
-
-    function updateSessionList() {
-      fetch('/uploads_index.json')
-        .then((res) => res.json())
-        .then((uploads) => {
-          const newIds = uploads.map((u) => u.id).join(',');
-          if (newIds !== latestSessionIds.join(',')) {
-            latestSessionIds = uploads.map((u) => u.id);
-            renderSessionList(uploads);
-            if (uploads.length) fetchAndRenderSession(uploads[0].id);
-          }
-        })
-        .catch((err) => {
-          console.error('Could not fetch uploads:', err);
+                return {
+                  type: 'line',
+                  shape: {
+                    x1: x,
+                    y1: yTop,
+                    x2: x,
+                    y2: yBottom,
+                  },
+                  style: {
+                    stroke: '#93C575',
+                    lineWidth: 2,
+                  },
+                };
+              },
+              encode: {
+                x: 0,
+              },
+              data: [[0]], // Initial value
+              silent: true,
+              z: 10,
+            },
+          ],
         });
-    }
-
-    const videoEl = document.getElementById('videoPlayer');
-
-    function startChartSync() {
-      function update() {
-        const currentTime = videoEl.currentTime;
-        ['microChart', 'audioChart'].forEach((chartId) => {
-          const el = document.getElementById(chartId);
-          const chart = echarts.getInstanceByDom(el);
-          if (chart) {
-            chart.setOption({
-              series: [
-                {},
-                {
-                  data: [[currentTime]],
-                },
-              ],
-            });
-          }
-        });
-
-        if (!videoEl.paused && !videoEl.ended) {
-          requestAnimationFrame(update);
-        }
       }
-      requestAnimationFrame(update);
-    }
 
-    videoEl.addEventListener('play', startChartSync);
-    videoEl.addEventListener('pause', () => { }); // no need to clear interval
-    videoEl.addEventListener('ended', () => { });
+      function renderSessionList(sessions) {
+        const sessionList = document.getElementById('sessionList');
+        sessionList.innerHTML = '';
 
-    updateSessionList();
-    setInterval(updateSessionList, 5000);
-  </script>
-</body>
+        sessions.forEach(({ id, timestamp }) => {
+          const wrapper = document.createElement('div');
+          wrapper.className =
+            'flex items-center gap-2 bg-gray-700 hover:bg-gray-600 p-2 rounded cursor-pointer transition text-sm';
 
+          const icon = document.createElement('div');
+          icon.className =
+            'w-8 h-8 bg-[#93C575] rounded flex items-center justify-center text-black font-bold text-xs';
+          icon.textContent = '▶';
+
+          const label = document.createElement('div');
+          label.className = 'flex-1 text-gray-200 leading-tight';
+          label.textContent = new Date(timestamp * 1000).toLocaleString();
+
+          wrapper.appendChild(icon);
+          wrapper.appendChild(label);
+          wrapper.addEventListener('click', () => fetchAndRenderSession(id));
+
+          sessionList.appendChild(wrapper);
+        });
+      }
+
+      function updateSessionList() {
+        fetch('/uploads_index.json')
+          .then((res) => res.json())
+          .then((uploads) => {
+            const newIds = uploads.map((u) => u.id).join(',');
+            if (newIds !== latestSessionIds.join(',')) {
+              latestSessionIds = uploads.map((u) => u.id);
+              renderSessionList(uploads);
+              if (uploads.length) fetchAndRenderSession(uploads[0].id);
+            }
+          })
+          .catch((err) => {
+            console.error('Could not fetch uploads:', err);
+          });
+      }
+
+      const videoEl = document.getElementById('videoPlayer');
+
+      function startChartSync() {
+        function update() {
+          const currentTime = videoEl.currentTime;
+          ['microChart', 'audioChart'].forEach((chartId) => {
+            const el = document.getElementById(chartId);
+            const chart = echarts.getInstanceByDom(el);
+            if (chart) {
+              chart.setOption({
+                series: [
+                  {},
+                  {
+                    data: [[currentTime]],
+                  },
+                ],
+              });
+            }
+          });
+
+          if (!videoEl.paused && !videoEl.ended) {
+            requestAnimationFrame(update);
+          }
+        }
+        requestAnimationFrame(update);
+      }
+
+      videoEl.addEventListener('play', startChartSync);
+      videoEl.addEventListener('pause', () => {}); // no need to clear interval
+      videoEl.addEventListener('ended', () => {});
+
+      updateSessionList();
+      setInterval(updateSessionList, 5000);
+    </script>
+  </body>
 </html>

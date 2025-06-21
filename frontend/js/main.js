@@ -19,10 +19,21 @@ if ('serviceWorker' in navigator) {
 document.addEventListener('DOMContentLoaded', () => {
   // Main video/canvas
   const video = document.getElementById('video');
-  const recordCanvas = document.createElement('canvas'); // invisible, used for final recording
-  const overlayCanvas = document.getElementById('canvas'); // visible bounding boxes
 
-  const loader = document.getElementById('loader');
+  if (!video) {
+    console.error('Video element not found');
+    return;
+  }
+
+  const recordCanvas = document.createElement('canvas');
+  const overlayCanvas = document.getElementById('canvas');
+
+  if (!overlayCanvas) {
+    console.error('Overlay canvas element not found');
+    return;
+  }
+
+  // const loader = document.getElementById('loader');
   const buttonsContainer = document.getElementById('buttons-container');
   const tapToRecordText = document.getElementById('tapToRecordText');
   const recordBeginBtn = document.getElementById('recordBeginBtn');
@@ -59,9 +70,19 @@ document.addEventListener('DOMContentLoaded', () => {
   let detectionInterval;
   let boundingBoxes = [];
 
-  /**
-   * Setup the camera feed (with audio).
-   */
+  // Function to check if the device is likely a mobile device
+  function isMobileDevice() {
+    // Check if the screen width is less than or equal to a typical mobile device width
+    const isMobileWidth = window.innerWidth <= 768;
+
+    // Check if the user agent matches common mobile device patterns
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isMobileUserAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+
+    return isMobileWidth && isMobileUserAgent;
+  }
+
+  // Function to setup the camera
   async function setupCamera() {
     if (cameraInitialized) return;
     cameraInitialized = true;
@@ -77,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
       video.onloadedmetadata = async () => {
         video.play();
 
-        loader.classList.add('hidden');
+        // loader.classList.add('hidden');
         video.classList.remove('hidden');
         buttonsContainer.classList.remove('opacity-0', 'pointer-events-none');
         buttonsContainer.classList.add('opacity-100', 'pointer-events-auto');

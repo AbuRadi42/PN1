@@ -1,272 +1,728 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <link rel="icon" href="icons/ios/128.png" type="image/x-icon" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/ios/180.png" />
-    <link rel="apple-touch-icon" sizes="120x120" href="/icons/ios/120.png" />
-    <link rel="apple-touch-icon" sizes="76x76" href="/icons/ios/76.png" />
-    <link rel="apple-touch-icon" href="/icons/ios/128.png" />
+    <meta name="author" content="AbuRadi" />
     <title>PN1 - AI Dog Translator</title>
-    <link rel="stylesheet" href="css/styles.css" />
-    <link rel="manifest" href="manifest.json" />
 
-    <script src="js/tailwindcss.3415.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <!-- Favicon -->
+    <link
+      id="favicon"
+      rel="icon"
+      href="icons/paw.green.svg"
+      type="image/svg+xml"
+    />
+    <!-- Tailwind CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <!-- AOS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Huninn&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Alpine.js -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+      defer
+    ></script>
+    <style>
+      :root {
+        --accent-color: #93c575;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      [data-aos] {
+        transition-duration: 800ms !important;
+      }
+
+      body {
+        font-family: 'Huninn', sans-serif;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      /* Transition for hover effects */
+      a,
+      button,
+      .social-icon,
+      .hover\:shadow-lg,
+      .hover\:text-[#93c575] {
+        transition: all 0.3s ease;
+      }
+
+      /* Backdrop */
+      .backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 40;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease-in-out;
+      }
+
+      .backdrop.active {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* Card styling */
+      .card {
+        box-shadow: none;
+        height: 400px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      /* Header and Footer Background */
+      header,
+      footer {
+        background: #93c575;
+      }
+
+      /* Text color for better contrast */
+      header a,
+      footer a,
+      header p,
+      footer p {
+        color: white;
+      }
+
+      /* Roadmap section */
+      #roadmap .relative {
+        position: relative;
+      }
+
+      #roadmap .absolute {
+        left: 0;
+        transform: none;
+      }
+
+      #roadmap ul {
+        padding-left: 2rem;
+      }
+
+      /* Problem section */
+      #problem {
+        padding: 4rem 0;
+      }
+
+      #euMap {
+        height: 400px;
+        margin: 2rem 0;
+      }
+
+      /* Text alignment */
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        text-align: center;
+      }
+
+      p {
+        text-align: left;
+      }
+
+      .nav-menu {
+        display: none;
+      }
+
+      .nav-menu.active {
+        display: flex;
+      }
+
+      #nav-menu {
+        top: 66px;
+      }
+
+      @media (min-width: 1024px) {
+        #nav-menu {
+          display: flex !important;
+          justify-content: flex-end;
+        }
+      }
+
+      /* Burger menu button */
+      .burger-button {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 20px;
+        height: 14px;
+        cursor: pointer;
+      }
+
+      .burger-line {
+        height: 2px;
+        width: 20px;
+        background-color: #93c575;
+        transition: all 0.25s ease;
+      }
+
+      .burger-button.open .burger-line:nth-child(1) {
+        transform: rotate(-45deg) translate(-4px, 4px);
+      }
+
+      .burger-button.open .burger-line:nth-child(2) {
+        opacity: 0;
+      }
+
+      .burger-button.open .burger-line:nth-child(3) {
+        transform: rotate(45deg) translate(-4px, -4px);
+      }
+
+      /* Roadmap timeline */
+      .roadmap-timeline {
+        position: relative;
+        padding-left: 20px;
+        margin-left: 10px;
+      }
+
+      .roadmap-timeline::before {
+        content: '';
+        position: absolute;
+        left: -5px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: var(--accent-color);
+      }
+
+      .roadmap-item {
+        position: relative;
+        padding-left: 30px;
+        margin-bottom: 30px;
+      }
+
+      .roadmap-item::before {
+        content: '';
+        position: absolute;
+        left: -32px;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: var(--accent-color);
+      }
+
+      .social-icon {
+        transition: color 0.3s ease;
+      }
+    </style>
   </head>
-  <body
-    class="h-screen w-screen flex flex-col items-center justify-center bg-transparent"
-  >
-    <img
-      src="icons/watermark.dog.svg"
-      alt="Watermark"
-      class="absolute top-2 left-2 w-16 h-auto opacity-40 pointer-events-none"
-    />
-    <img
-      src="icons/watermark.PN1.svg"
-      alt="Watermark"
-      class="absolute top-2 left-[4.5rem] p-2 w-auto h-16 opacity-40 pointer-events-none"
-    />
 
-    <div
-      id="loader"
-      class="absolute top-20 flex flex-col items-center justify-center rounded"
-    >
-      <img
-        src="icons/ios/512.png"
-        alt="Loading..."
-        class="w-48 h-48 animate-pulse"
-      />
-      <h4>Welcome to PN1</h4>
-    </div>
-
-    <div
-      id="buttons-container"
-      class="fixed bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-4 items-center opacity-0 pointer-events-none transition-opacity duration-500 z-20"
-    >
-      <!-- Info/Help Button -->
-      <button
-        id="infoBtn"
-        class="w-[12vw] h-[12vw] max-w-20 max-h-20 min-w-14 min-h-14 flex items-center justify-center rounded-full bg-[#93C575] text-white shadow-lg hover:bg-[#7FAF5A] transition"
+  <body class="bg-gray-50 text-gray-800" x-data="{ open: false }">
+    <!-- NAVIGATION -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+      <div
+        class="container mx-auto px-4 py-4 flex justify-between items-center"
       >
-        <img src="icons/infoBtn.svg" alt="Info" class="w-1/2 h-1/2" />
-      </button>
-      <!-- Tweak Button -->
-      <button
-        id="tweakBtn"
-        class="w-[12vw] h-[12vw] max-w-20 max-h-20 min-w-14 min-h-14 flex items-center justify-center rounded-full bg-[#93C575] text-white shadow-lg hover:bg-[#7FAF5A] transition"
-      >
-        <img src="icons/tweakBtn.svg" alt="Settings" class="w-1/2 h-1/2" />
-      </button>
-      <!-- Record Button Container Div -->
-      <div class="relative flex flex-col items-center">
-        <!-- Text bubble -->
-        <span
-          id="tapToRecordText"
-          class="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-white bg-[#00000099] rounded-xl px-3 py-1 shadow-lg opacity-0 transition-opacity duration-300 whitespace-nowrap before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-[#00000099]"
-        >
-          Tap to Record
-        </span>
-        <!-- Record Button -->
-        <button
-          id="recordBeginBtn"
-          class="w-[18vw] h-[18vw] max-w-24 max-h-24 min-w-16 min-h-16 flex items-center justify-center rounded-full bg-[#93C575] text-white shadow-lg hover:bg-[#7FAF5A] transition relative"
-        >
-          <div
-            class="absolute w-full h-full rounded-full bg-[#93C575] opacity-30 animate-ping"
-          ></div>
+        <div class="flex items-center h-10 space-x-2">
           <img
-            src="icons/recordBeginBtn.svg"
-            alt="Record"
-            class="w-1/2 h-1/2 relative"
+            src="icons/watermark.dog.svg"
+            class="h-full filter brightness-0"
           />
-        </button>
-      </div>
-      <!-- Saved Button -->
-      <button
-        id="savedBtn"
-        class="w-[12vw] h-[12vw] max-w-20 max-h-20 min-w-14 min-h-14 flex items-center justify-center rounded-full bg-[#93C575] text-white shadow-lg hover:bg-[#7FAF5A] transition"
-      >
-        <img src="icons/savedBtn.svg" alt="Saved" class="w-1/2 h-1/2" />
-      </button>
-      <!-- SignIn Button -->
-      <button
-        id="signinBtn"
-        class="w-[12vw] h-[12vw] max-w-20 max-h-20 min-w-14 min-h-14 flex items-center justify-center rounded-full bg-[#93C575] text-white shadow-lg hover:bg-[#7FAF5A] transition"
-      >
-        <img src="icons/loginBtn.svg" alt="Sign In" class="w-1/2 h-1/2" />
-      </button>
-    </div>
-
-    <!-- Info Modal -->
-    <div
-      id="infoModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50"
-    >
-      <div
-        class="relative max-w-md w-full overflow-y-auto h-[80vh] mx-4 p-6 bg-white rounded-[1.5rem]"
-      >
-        <h2 class="text-2xl font-bold mb-2 text-center">Welcome to PN1</h2>
-        <p class="mb-4 text-xs text-gray-600">
-          PN1 is an AI-powered app designed to help you understand your pet.
-          Record while translating, and share your favorite moments while
-          discovering new ways to bond with your pet.
-        </p>
-        <p class="mb-4 text-sm text-center text-gray-700">
-          Scan the QR code to access this PWA:
-        </p>
-        <img id="qrCode" alt="QR Code" class="w-60 h-60 mx-auto mb-4" />
-        <div class="text-sm mb-4 space-y-2">
-          <p class="flex items-center gap-2">
-            <img
-              src="icons/infoBtn.svg"
-              alt="Info Icon"
-              class="w-4 h-4 black-svg"
-            />
-            <strong>Info/Help:</strong> Opens this help dialog.
-          </p>
-          <p class="flex items-center gap-2">
-            <img
-              src="icons/tweakBtn.svg"
-              alt="Settings Icon"
-              class="w-4 h-4 black-svg"
-            />
-            <strong>Settings:</strong> Adjusts app settings.
-          </p>
-          <p class="flex items-center gap-2">
-            <img
-              src="icons/recordBeginBtn.svg"
-              alt="Record Icon"
-              class="w-4 h-4 black-svg"
-            />
-            <strong>Record:</strong> Records your memories with your pet.
-          </p>
-          <p class="flex items-center gap-2">
-            <img
-              src="icons/savedBtn.svg"
-              alt="Saved Icon"
-              class="w-4 h-4 black-svg"
-            />
-            <strong>Saved:</strong> Views saved videos.
-          </p>
-          <p class="flex items-center gap-2">
-            <img
-              src="icons/loginBtn.svg"
-              alt="Login Icon"
-              class="w-4 h-4 black-svg"
-            />
-            <strong>Login:</strong> Logs you in for additional features.
-          </p>
+          <img
+            src="icons/watermark.PN1.svg"
+            class="h-full filter brightness-0"
+          />
         </div>
-        <button
-          id="closeModal"
-          class="block mx-auto px-4 py-2 bg-white text-[#93C575] border border-[#93C575] rounded-full hover:bg-[#93C575] hover:text-white"
+        <div class="lg:hidden">
+          <button
+            @click="open = !open"
+            class="burger-button"
+            :class="{ 'open': open }"
+          >
+            <span class="burger-line"></span>
+            <span class="burger-line"></span>
+            <span class="burger-line"></span>
+          </button>
+        </div>
+        <div
+          id="nav-menu"
+          x-show="open"
+          @click.away="open = false"
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="opacity-0 scale-95"
+          x-transition:enter-end="opacity-100 scale-100"
+          x-transition:leave="transition ease-in duration-150"
+          x-transition:leave-start="opacity-100 scale-100"
+          x-transition:leave-end="opacity-0 scale-95"
+          class="lg:flex lg:flex-row lg:items-center lg:space-y-0 lg:space-x-4 lg:static lg:bg-transparent lg:shadow-none bg-white absolute left-0 w-full px-4 py-4 shadow-md flex flex-col space-y-4"
         >
-          I understand
-        </button>
-        <div class="text-gray-500 text-center mt-4">
-          <p>
-            <a href="#" class="text-xs underline hover:text-gray-700"
-              >Ts & Cs</a
-            >
-            |
-            <a href="#" class="text-xs underline hover:text-gray-700"
-              >Privacy Policy</a
-            >
-          </p>
-          <p class="text-xs mt-1">&copy; 2025 PN1. All rights reserved.</p>
+          <a href="#hero" class="block" @click="open = false">Home</a>
+          <a href="#problem" class="block" @click="open = false">The Problem</a>
+          <a href="#solution" class="block" @click="open = false">Solution</a>
+          <a href="#features" class="block" @click="open = false">Features</a>
+          <a href="#roadmap" class="block" @click="open = false">Roadmap</a>
+          <a href="#team" class="block" @click="open = false">Team</a>
+          <a href="#impact" class="block" @click="open = false">Impact</a>
+          <a href="#contact" class="block" @click="open = false">Get PN1</a>
         </div>
       </div>
-    </div>
+    </nav>
 
-    <!-- Tweak Modal -->
-    <div
-      id="tweakModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50"
+    <div id="backdrop" class="backdrop" :class="{ 'active': open }"></div>
+
+    <!-- HERO -->
+    <header
+      id="hero"
+      class="bg-[#93C575] py-24 text-white flex items-center justify-center"
     >
-      <div
-        class="relative max-w-md w-full h-[80vh] mx-4 p-6 bg-white rounded-[1.5rem]"
-      >
-        <button
-          id="closeTweakModal"
-          class="absolute top-2 right-2 flex items-center text-xl justify-center w-8 h-8 bg-[#93C575] text-white rounded-full hover:bg-[#7FAF5A] transition z-10"
+      <div class="mx-auto px-4 text-center">
+        <div
+          class="inline-flex items-center justify-center border-2 border-dashed border-white p-8 bg-transparent rounded-lg"
+          style="width: 90vw; min-height: 201px"
         >
-          &#x2715;
-        </button>
-        <h2 class="text-2xl font-bold mb-2 text-center">Settings</h2>
-        <p class="mb-4 text-xs text-gray-600">
-          Adjust app settings to customize your experience.
+          <p class="text-xl my-8" data-aos="fade-up">
+            A demo will be added here soon.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- PROBLEM -->
+    <section id="problem" class="py-16 bg-gray-100">
+      <div class="container mx-auto px-4">
+        <h2 class="text-4xl font-bold mb-6" data-aos="fade-down">
+          The Silent Struggle of Pets
+        </h2>
+        <p class="mb-4" data-aos="fade-up">
+          In Germany, <strong>45% of households</strong> own pets—≈34.3 million
+          companion animals (10.5 M dogs, 15.7 M cats, 4.6 M small mammals, 3.5
+          M birds)【<a href="#ref-zzf" class="underline">ZZF/IVH 2023</a>】.
+          Across the EU, <strong>49% of households</strong> keep pets—≈299
+          million animals (90 M dogs, 108 M cats, 48 M birds, 25 M small
+          mammals)【<a href="#ref-fediaf" class="underline">FEDIAF 2023</a>】.
+        </p>
+        <p class="mb-6" data-aos="fade-up">
+          Every year nearly <strong>350,000 animals</strong> enter German
+          shelters; <strong>69% report high/overcapacity</strong>,
+          <strong>49% are full</strong>【<a href="#ref-dtb" class="underline"
+            >Deutscher Tierschutzbund 2024</a
+          >】.
+        </p>
+        <blockquote class="italic text-gray-700 mb-4" data-aos="fade-up">
+          “Germany set the stage for modern animal welfare with the first Animal
+          Rights Law in 1837.”
+        </blockquote>
+        <p data-aos="fade-up">
+          The scale of abuse is stark: Hesse logged
+          <strong>524 offenses</strong> under its Animal Protection Act in 2023;
+          Bavaria <strong>1,045 offenses</strong> in 2023 (≈3/day)【<a
+            href="#ref-gesetze"
+            class="underline"
+            >State Reports</a
+          >】.
         </p>
       </div>
-    </div>
+    </section>
 
-    <!-- Saved Modal -->
-    <div
-      id="savedModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50"
-    >
-      <div
-        class="relative max-w-md w-full h-[80vh] mx-4 p-6 bg-white rounded-[1.5rem]"
-      >
-        <button
-          id="closeSavedModal"
-          class="absolute top-2 right-2 flex items-center text-xl justify-center w-8 h-8 bg-[#93C575] text-white rounded-full hover:bg-[#7FAF5A] transition z-10"
+    <!-- PN1 App Solution Intro -->
+    <section id="solution" class="py-16 bg-white">
+      <div class="container mx-auto px-4">
+        <h2
+          class="text-4xl font-bold text-center text-gray-800 mb-6"
+          data-aos="fade-down"
         >
-          &#x2715;
-        </button>
-        <div class="h-full overflow-y-auto">
-          <h2 class="text-2xl font-bold mb-2 text-center">Saved Videos</h2>
+          Introducing PN1: Bridging the Gap
+        </h2>
+        <p class="mb-4 text-center" data-aos="fade-up">
+          PN1 is a first-of-its-kind app that uses AI to decode your dog's
+          feelings. Just capture a moment – a bark, a look, or a gesture – and
+          PN1 translates it into a clear message. Whether your dog is stressed,
+          excited, or simply wants attention, PN1 tells you exactly what they
+          need.
+        </p>
+        <p class="mb-6 text-center" data-aos="fade-up">
+          By giving your dog a voice, PN1 lets you respond with confidence and
+          care. Never again guess why they’re anxious or frustrated – you’ll
+          know. Imagine comforting your pet with words they truly understand.
+          That’s the power of PN1.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+          <div data-aos="fade-up" data-aos-delay="100">
+            <h3 class="text-2xl font-semibold mb-2">Immediate Insights</h3>
+            <p>
+              See your dog’s emotions in real time. PN1 analyzes barks and body
+              language into plain phrases so you can act right away.
+            </p>
+          </div>
+          <div data-aos="fade-up" data-aos-delay="200">
+            <h3 class="text-2xl font-semibold mb-2">
+              Prevent Misunderstandings
+            </h3>
+            <p>
+              Spot subtle anxiety signals early. Calm your dog before they
+              panic, strengthening trust and security.
+            </p>
+          </div>
+          <div data-aos="fade-up" data-aos-delay="300">
+            <h3 class="text-2xl font-semibold mb-2">Stronger Bond</h3>
+            <p>
+              Know exactly what your pet wants and needs. Respond to them
+              properly to build confidence and deepen your connection.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-16">
+      <div class="container mx-auto px-4">
+        <h2
+          class="text-4xl font-bold text-center text-gray-800 mb-12"
+          data-aos="fade-down"
+        >
+          Key Features
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div
-            id="savedVideosContainer"
-            class="mb-4 text-xs text-gray-600"
-          ></div>
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
+            <h3 class="text-2xl font-semibold mb-2">AI Translation</h3>
+            <p>
+              Leverage advanced AI to translate your dog’s barks, whines, and
+              body language into easy-to-understand emotional insights.
+            </p>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
+            <h3 class="text-2xl font-semibold mb-2">Video Recording</h3>
+            <p>
+              Capture moments directly in-app. Record and upload videos of your
+              dog’s behavior instantly for analysis and sharing with trainers or
+              vets.
+            </p>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
+            <h3 class="text-2xl font-semibold mb-2">Offline Access</h3>
+            <p>
+              All analyses and recordings are saved on your device. View your
+              dog’s history and insights even without an internet connection.
+            </p>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="400"
+          >
+            <h3 class="text-2xl font-semibold mb-2">Cross-Platform</h3>
+            <p>
+              Works on iOS, Android, and desktop browsers. No app store needed –
+              just add PN1 to your home screen from any browser.
+            </p>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="500"
+          >
+            <h3 class="text-2xl font-semibold mb-2">Privacy-First</h3>
+            <p>
+              All videos stay private. Data is processed on your device, and
+              nothing is shared without your permission.
+            </p>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="600"
+          >
+            <h3 class="text-2xl font-semibold mb-2">Easy Install</h3>
+            <p>
+              Add PN1 to your home screen in seconds. No downloads needed, just
+              one tap and you’re set to go.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- SignIn Modal -->
-    <div
-      id="signinModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50"
-    >
-      <div
-        class="relative max-w-md w-full h-[80vh] mx-4 p-6 bg-white rounded-[1.5rem]"
-      >
-        <button
-          id="closeSigninModal"
-          class="absolute top-2 right-2 flex items-center text-xl justify-center w-8 h-8 bg-[#93C575] text-white rounded-full hover:bg-[#7FAF5A] transition z-10"
+    <!-- Social Proof / Testimonial -->
+    <section id="testimonials" class="py-16 bg-gray-50">
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="text-4xl font-bold text-gray-800 mb-8" data-aos="fade-down">
+          What Pet Owners Are Saying
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div
+            class="p-6 bg-white rounded-lg shadow"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
+            <blockquote class="italic text-gray-700 mb-4">
+              “PN1 has been a game-changer for me. I always wondered why Luna
+              barked when I left, but now I know she misses me. Being able to
+              reassure her properly has made us both so much happier.”
+            </blockquote>
+            <p class="font-semibold">— Jamie L., PN1 User and Dog Mom</p>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
+            <blockquote class="italic text-gray-700 mb-4">
+              “As a dog trainer, PN1 has helped me understand my clients' dogs
+              better. It's like having a translator for canine emotions.”
+            </blockquote>
+            <p class="font-semibold">— Mark T., Professional Dog Trainer</p>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
+            <blockquote class="italic text-gray-700 mb-4">
+              “I was amazed at how accurately PN1 interpreted my dog's barks.
+              It's like having a conversation with him!”
+            </blockquote>
+            <p class="font-semibold">— Sarah K., PN1 User</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Roadmap -->
+    <section id="roadmap" class="bg-gray-100 py-16">
+      <div class="container mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center text-gray-800 mb-12">
+          Roadmap
+        </h2>
+        <div class="roadmap-timeline">
+          <div class="roadmap-item">
+            <h4 class="text-xl text-left font-semibold">Summer 2025</h4>
+            <p>
+              Complete development of the first prototype and begin closed alpha
+              testing with dog owners.
+            </p>
+          </div>
+          <div class="roadmap-item">
+            <h4 class="text-xl text-left font-semibold">Winter 2025/2026</h4>
+            <p>
+              Refine our AI models based on user feedback. Launch public beta
+              and expand testing to a wider audience.
+            </p>
+          </div>
+          <div class="roadmap-item">
+            <h4 class="text-xl text-left font-semibold">2026 and Beyond</h4>
+            <p>
+              Introduce additional languages and expand to other pets. Partner
+              with vets and shelters to further improve animal welfare.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Team -->
+    <section id="team" class="py-16">
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="text-4xl font-bold text-black mb-8" data-aos="fade-down">
+          Our Team
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
+            <div class="flex flex-col items-center">
+              <img
+                src="images/Deniz.png"
+                alt="Deniz Sertkan"
+                class="w-40 h-40 rounded-md mb-4"
+              />
+              <h3 class="text-2xl text-black font-semibold">
+                Deniz Sertkan
+                <a
+                  href="https://www.linkedin.com/in/denizsertkan/"
+                  class="social-icon text-black hover:text-[#93c575]"
+                  style="font-size: 1.25rem"
+                >
+                  <i class="fab fa-linkedin fa-lg"></i>
+                </a>
+              </h3>
+              <p class="text-xs font-medium" style="color: #93c575">
+                Machine Learning Engineer, Researcher & Founder
+              </p>
+              <ul class="mt-2 text-left text-sm list-disc list-inside">
+                <li>Conducting research on animal behavior</li>
+                <li>Leading AI model training & development</li>
+              </ul>
+            </div>
+          </div>
+          <div
+            class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
+            <div class="flex flex-col items-center">
+              <img
+                src="images/Sam.png"
+                alt="Sameh Aburadi"
+                class="w-40 h-40 rounded-md mb-4"
+              />
+              <h3 class="text-2xl text-black font-semibold">
+                Sameh AbuRadi
+                <a
+                  href="https://www.linkedin.com/in/~42/"
+                  class="social-icon text-gray-800 hover:text-[#93c575]"
+                  style="font-size: 1.25rem"
+                >
+                  <i class="fab fa-linkedin fa-lg"></i>
+                </a>
+              </h3>
+              <p class="text-xs font-medium" style="color: #93c575">
+                LLM-Augmented Software Dev & Co-Founder
+              </p>
+              <ul class="mt-2 text-left text-sm list-disc list-inside">
+                <li>Designing UI/UX for seamless use</li>
+                <li>Building the Website and the PWA</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sustainability / Broader Impact -->
+    <section id="impact" class="bg-white py-16">
+      <div class="container mx-auto px-4">
+        <h2
+          class="text-4xl font-bold text-center text-gray-800 mb-8"
+          data-aos="fade-down"
         >
-          &#x2715;
-        </button>
-        <h2 class="text-2xl font-bold mb-2 text-center">Sign In</h2>
-        <p class="mb-4 text-xs text-gray-600">
-          Log in to access additional features.
+          Broader Impact & Sustainability
+        </h2>
+        <p class="text-center max-w-3xl mx-auto mb-4" data-aos="fade-up">
+          By helping people understand their pets, PN1 fosters compassion and
+          prevents needless suffering. Better communication can reduce
+          abandonment: when owners recognize anxiety, they can address it
+          instead of giving up their pet. Educating owners with PN1 raises
+          awareness that animals feel deeply, which can ripple into kinder
+          communities and more humane treatment of all animals. In this way, PN1
+          contributes to a more empathetic world for pets and people alike.
+        </p>
+        <p class="text-center max-w-3xl mx-auto" data-aos="fade-up">
+          The pet industry in Germany is substantial, with the market generating
+          approximately USD 6.81 billion in revenue in 2023, a 9.5% increase
+          from 2022. The Germany pet insurance market size was estimated at USD
+          1.18 billion in 2024 and is projected to grow at a CAGR of 15.4% from
+          2025 to 2030. These economic aspects highlight the significant
+          investment in pet welfare and the growing trend of pet owners buying
+          pet supplies online.
+        </p>
+        <div class="flex justify-center mt-8" data-aos="fade-up">
+          <!-- <img
+            src="icons/impact-infographic.svg"
+            alt="Impact Infographic"
+            class="max-w-full h-auto"
+          /> -->
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER & CONTACT -->
+    <footer id="contact" class="bg-[#93C575] py-12">
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="text-3xl text-black font-bold mb-4" data-aos="fade-down">
+          Add PN1 to Your Device
+        </h2>
+        <p class="mb-6 text-center" data-aos="fade-up">
+          Open <a href="https://pn1.app" class="underline">pn1.app</a> in your
+          browser and add to home screen.
+        </p>
+        <div class="inline-block bg-white p-4 rounded-lg" data-aos="zoom-in">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=93C575&data=https://pn-1-pwa.vercel.app/pwa"
+            alt="PN1 QR Code"
+            class="mx-auto"
+          />
+          <a href="/pwa">
+            <p class="mt-2 text-xs text-center text-gray-700">
+              Tap or scan to install
+            </p>
+          </a>
+        </div>
+        <p class="mt-8 text-sm text-center opacity-90" data-aos="fade-up">
+          &copy; 2025 PN1 Team &bull;
+          <a href="mailto:contact@pn1.app" class="underline">contact@pn1.app</a>
         </p>
       </div>
-    </div>
+    </footer>
 
-    <div class="relative w-full h-full">
-      <video
-        id="video"
-        class="w-full h-full object-cover hidden"
-        autoplay
-        muted
-        playsinline
-      ></video>
-      <canvas
-        id="canvas"
-        class="absolute top-0 left-0 w-full h-full"
-        style="pointer-events: none; z-index: 10"
-      ></canvas>
-    </div>
+    <!-- SCRIPTS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+      AOS.init();
 
-    <script src="js/indexedDB.js"></script>
-    <script src="js/main.js"></script>
+      // Function to update the favicon based on the color scheme
+      function updateFavicon() {
+        const favicon = document.getElementById('favicon');
+        const isDarkMode = window.matchMedia(
+          '(prefers-color-scheme: dark)',
+        ).matches;
+
+        if (isDarkMode) {
+          favicon.href = 'icons/paw.white.svg';
+        } else {
+          favicon.href = 'icons/paw.black.svg';
+        }
+      }
+
+      updateFavicon();
+
+      // Add an event listener to update the favicon if the color scheme changes
+      window
+        .matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener('change', updateFavicon);
+    </script>
+
+    <!-- REFERENCES -->
+    <div class="container mx-auto px-4 py-8 text-sm text-gray-500">
+      <p id="ref-zzf">
+        ZZF/IVH Heimtier-Report 2023: German pet counts (www.zzf.de)
+      </p>
+      <p id="ref-fediaf">
+        FEDIAF European Pet Food Industry Federation Report 2023
+      </p>
+      <p id="ref-dtb">Deutscher Tierschutzbund Shelter Survey 2024</p>
+      <p id="ref-gesetze">
+        State Animal Protection Offense Reports (Hesse, Bavaria 2023)
+      </p>
+    </div>
   </body>
 </html>

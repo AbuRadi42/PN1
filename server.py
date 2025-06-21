@@ -2,18 +2,20 @@ from sanic import Sanic, response
 from sanic.request import File
 from sanic.log import logger
 from sanic.response import json as sanic_json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import uuid
 import asyncio
-import tensorflow as tf
 import numpy as np
-import cv2
-import librosa
 import json
 import shutil
+import bcrypt
+import jwt
+from functools import wraps
 from dotenv import load_dotenv
+import asyncpg
 
+# Load environment variables
 load_dotenv()
 
 # --- Configuration ---
@@ -22,36 +24,152 @@ THRESHOLD = 30
 AUDIO_MODEL_PATH = "models/audio_classifier.h5"
 MICRO_MODEL_PATH = "models/micro_interaction.keras"
 UPLOADS_DIR = "uploads"
+JWT_SECRET = os.getenv("JWT_SECRET", "your_jwt_secret_key")
 
-# --- Load Models Once ---
-audio_model = tf.keras.models.load_model(AUDIO_MODEL_PATH)
-micro_model = tf.keras.models.load_model(MICRO_MODEL_PATH)
+# Database configuration
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_PORT = os.getenv("DB_PORT", "5432")
+
+# Path to the local ffmpeg binary
+FFMPEG_PATH = os.path.join(os.getcwd(), "bin", "ffmpeg")
+
+# Placeholder for TensorFlow models
+class PlaceholderModel:
+    def predict(self, *args, **kwargs):
+        # Return a dummy prediction
+        return [np.zeros(11)]  # Adjust the shape as needed
+
+# Use placeholder models instead of loading actual models
+audio_model = PlaceholderModel()
+micro_model = PlaceholderModel()
 
 EMOTIONS = [
     "Surprised", "Excited", "Happy", "Content", "Relaxed",
     "Tired", "Bored", "Sad", "Neutral", "Scared", "Angry"
 ]
 
+# --- Database Connection ---
+async def get_db_connection():
+    conn = await asyncpg.connect(
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        port=DB_PORT
+    )
+    return conn
+
+# --- Authentication Utilities ---
+def hash_password(password):
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+
+def verify_password(password, hashed):
+    return bcrypt.checkpw(password.encode(), hashed)
+
+def generate_jwt(user_id):
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(days=1)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+def decode_jwt(token):
+    try:
+        decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return decoded
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+def auth_required(handler):
+    @wraps(handler)
+    async def wrapper(request, *args, **kwargs):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return response.json({"error": "Authorization token required"}, status=401)
+
+        token = auth_header.split(" ")[1]
+        user = decode_jwt(token)
+        if not user:
+            return response.json({"error": "Invalid or expired token"}, status=401)
+
+        request.ctx.user = user
+        return await handler(request, *args, **kwargs)
+    return wrapper
+
 # --- Static Files ---
 app.static("/", "./frontend/", name="frontend_static")
 app.static("/uploads", "./uploads", name="uploads_static")
 
+# --- Authentication Endpoints ---
+@app.post("/auth/register")
+async def register(request):
+    data = request.json
+    required_fields = ["email", "password"]
+    if not all(field in data for field in required_fields):
+        return sanic_json({"error": "Missing fields"}, status=400)
+
+    try:
+        conn = await get_db_connection()
+        user = await conn.fetchrow("SELECT * FROM users WHERE email = $1", data["email"])
+        if user:
+            return sanic_json({"error": "Email already registered"}, status=409)
+
+        hashed_password = hash_password(data["password"])
+        await conn.execute(
+            "INSERT INTO users (email, password) VALUES ($1, $2)",
+            data["email"], hashed_password.decode()
+        )
+        await conn.close()
+        return sanic_json({"message": "User registered successfully"})
+    except Exception as e:
+        return sanic_json({"error": str(e)}, status=500)
+
+@app.post("/auth/login")
+async def login(request):
+    data = request.json
+    email = data.get("email")
+    password = data.get("password")
+
+    try:
+        conn = await get_db_connection()
+        user = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email)
+        await conn.close()
+
+        if not user or not verify_password(password, user["password"].encode()):
+            return sanic_json({"error": "Invalid credentials"}, status=401)
+
+        token = generate_jwt(user["email"])
+        return sanic_json({"token": token})
+    except Exception as e:
+        return sanic_json({"error": str(e)}, status=500)
+
+@app.get("/auth/check")
+@auth_required
+async def check_auth(request):
+    return sanic_json({"user": request.ctx.user})
+
+# --- Main Endpoints ---
 @app.get("/")
-async def serve_frontend(request):
+async def serve_landing_page(request):
     return await response.file("./frontend/index.html")
+
+@app.get("/pwa")
+async def serve_pwa(request):
+    return await response.file("./frontend/pwa.html")
 
 # --- Audio Processing ---
 def preprocess_audio(audio_path: str) -> np.ndarray:
-    y, sr = librosa.load(audio_path, sr=16000)
-    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
-    mfccs_mean = np.mean(mfccs, axis=1)
-    mfccs_mean = (mfccs_mean - np.min(mfccs_mean)) / (np.ptp(mfccs_mean) + 1e-6)
-    return np.expand_dims(mfccs_mean.astype(np.float32), axis=0)
+    # Placeholder for audio processing
+    return np.zeros((1, 40))  # Dummy data
 
 def analyze_audio(audio_path: str) -> dict:
-    arr = preprocess_audio(audio_path)
-    preds = audio_model.predict(arr)[0]
-    return {EMOTIONS[i]: float(preds[i]) for i in range(len(preds))}
+    # Placeholder for audio analysis
+    return {EMOTIONS[i]: float(0) for i in range(len(EMOTIONS))}
 
 # --- Helpers ---
 async def run_async_cmd(*cmd):
@@ -78,6 +196,7 @@ def save_combo_analysis(upload_dir: str, audio_emotions: dict, micro_path: str) 
 
 # --- Main Upload/Analyze Route ---
 @app.post("/analyze")
+# @auth_required
 async def analyze(request):
     video_file: File = request.files.get("video")
     if not video_file:
@@ -108,10 +227,10 @@ async def analyze(request):
         logger.error(f"Frame analysis error: {stderr}")
         return response.json({"error": "Frame analysis failed."}, status=500)
 
-    # Extract audio
+    # Extract audio using local ffmpeg binary
     audio_path = os.path.join(upload_dir, "audio.wav")
     retcode, _, stderr = await run_async_cmd(
-        "ffmpeg", "-y", "-i", video_path, "-vn", "-acodec", "pcm_s16le", audio_path
+        FFMPEG_PATH, "-y", "-i", video_path, "-vn", "-acodec", "pcm_s16le", audio_path
     )
     if retcode != 0:
         logger.error(f"Audio extraction error: {stderr}")
@@ -148,10 +267,12 @@ async def list_uploaded_sessions(request):
                 "id": upload_id,
                 "timestamp": os.path.getmtime(os.path.join(up_path, "video.mp4"))
             })
+
     entries.sort(key=lambda x: x["timestamp"], reverse=True)
     return sanic_json(entries)
 
 @app.post("/delete_video")
+# @auth_required
 async def delete_video(request):
     data = request.json
     upload_id = data.get("upload_id")

@@ -3,7 +3,6 @@ import os
 import cv2
 import numpy as np
 
-
 def extract_diff_frames(video_path, output_dir, threshold):
     """
     Captures frames from a video only if they differ enough
@@ -20,18 +19,16 @@ def extract_diff_frames(video_path, output_dir, threshold):
     while True:
         ret, frame = cap.read()
         if not ret:
-            break  # no more frames
+            break  # No more frames
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         current_time_sec = frame_index / fps if fps else 0.0
 
         # If first capture or difference >= threshold, we save the frame
-        # If first capture or difference >= threshold, we save the frame
         if last_gray is None:
             last_gray = gray.copy()
             out_name = f"frame_{current_time_sec:.2f}.jpg"
             out_path = os.path.join(output_dir, out_name)
-            # Instead of writing 'frame', write 'gray'
             cv2.imwrite(out_path, gray)
             saved_count += 1
         else:
@@ -51,7 +48,6 @@ def extract_diff_frames(video_path, output_dir, threshold):
     total_frames = frame_index
     print(f"Processed {int(total_frames)} frames; saved {saved_count} frames.")
     print(f"Frames are in: {output_dir}")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

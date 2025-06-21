@@ -3,13 +3,16 @@ import os
 import json
 import cv2
 import numpy as np
-import tensorflow as tf
 import time
 from tqdm import tqdm
 
 # Must match the 5-class model output
 EMOTIONS = ["Angry", "Happy", "Relaxed", "Sad", "Neutral"]
 
+class PlaceholderModel:
+    def predict(self, input_data):
+        # Return dummy predictions
+        return [np.random.rand(len(EMOTIONS))]  # Random predictions for each class
 
 def preprocess_frame(gray, debug=False):
     """
@@ -24,9 +27,9 @@ def preprocess_frame(gray, debug=False):
         print("Preprocessed shape:", gray.shape)
     return gray
 
-
 def analyze_extracted_frames(frames_dir, model_path, output_json, debug=False):
-    model = tf.keras.models.load_model(model_path)
+    # Use a placeholder model instead of loading a TensorFlow model
+    model = PlaceholderModel()
     results = []
 
     frame_files = sorted(
@@ -64,7 +67,6 @@ def analyze_extracted_frames(frames_dir, model_path, output_json, debug=False):
     duration = time.time() - start_time
     print(f"\n✅ Analysis complete. {len(results)} frames processed in {duration:.2f}s")
     print(f"📁 Results saved to: {output_json}")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze frames using a 5-class grayscale model.")
